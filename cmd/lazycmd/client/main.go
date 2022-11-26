@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/lcrownover/lazycmd/internal/lazycmd"
 )
 
@@ -21,36 +20,10 @@ func main() {
 	}
 
 	target := lazycmd.CleanseTarget(*fTarget)
+	command := lazycmd.CleanseCommand(*fCommand)
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost",
-	})
-	if err != nil {
-		panic(err)
-	}
-
+	p := lazycmd.NewProducer(target)
 	defer p.Close()
 
-	go func() {
-		for e := range p.Events() {
-			switch ev := e.(type) {
-			case *kafka.Message:
-				if ev.TopicPartition.Error != nil {
-					fmt.Printf("Delivery Failed: %v\n", ev.TopicPartition)
-				} else {
-					fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
-				}
-			}
-		}
-	}()
-
-	// produce messages asynchronously
-	topic := target
-	p.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          []byte(*fCommand),
-	}, nil)
-
-	// wait for deliveries before shutting down
-	p.Flush(15 * 1000)
+	p.SendMessage(target, command)
 }

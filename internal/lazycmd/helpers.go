@@ -21,3 +21,8 @@ func CleanseTarget(t string) string {
 	ch := strings.ToLower(t)
 	return ch
 }
+
+func CleanseCommand(c string) string {
+	// Cleaning the command if needed
+	return c
+}
